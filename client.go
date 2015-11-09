@@ -14,26 +14,19 @@ import (
 
 //proxy <-> mysql server
 type Conn struct {
-	conn net.Conn
-
-	pkg *mysql.PacketIO
-
-	addr     string
-	user     string
-	password string
-	db       string
-
+	conn       net.Conn
+	pkg        *mysql.PacketIO
+	addr       string
+	user       string
+	password   string
+	db         string
 	capability uint32
-
-	status uint16
-
-	collation mysql.CollationId
-	charset   string
-	salt      []byte
-
-	lastPing int64
-
-	pkgErr error
+	status     uint16
+	collation  mysql.CollationId
+	charset    string
+	salt       []byte
+	lastPing   int64
+	pkgErr     error
 }
 
 func (c *Conn) Connect(addr string, user string, password string, db string) error {

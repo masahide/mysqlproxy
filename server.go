@@ -23,45 +23,29 @@ var DEFAULT_CAPABILITY uint32 = mysql.CLIENT_LONG_PASSWORD | mysql.CLIENT_LONG_F
 	mysql.CLIENT_TRANSACTIONS | mysql.CLIENT_SECURE_CONNECTION
 
 type Config struct {
-	Addr     string `yaml:"addr"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	//LogPath  string `yaml:"log_path"`
-	//LogLevel string `yaml:"log_level"`
-
-	AllowIps string `yaml:"allow_ips"`
-	//LogSql   string `yaml:"log_sql"`
-
-	Nodes []NodeConfig `yaml:"nodes"`
+	Addr     string       `yaml:"addr"`
+	User     string       `yaml:"user"`
+	Password string       `yaml:"password"`
+	AllowIps string       `yaml:"allow_ips"`
+	Nodes    []NodeConfig `yaml:"nodes"`
 }
 
 type NodeConfig struct {
-	Name string `yaml:"name"`
-	//DownAfterNoAlive int    `yaml:"down_after_noalive"`
-	//MaxConnNum       int    `yaml:"max_conns_limit"`
-
+	Name     string `yaml:"name"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Db       string `yaml:"db"`
-
-	Addr string `yaml:"addr"`
+	Addr     string `yaml:"addr"`
 }
 type Server struct {
-	cfg *Config
-
+	cfg      *Config
 	addr     string
 	user     string
 	password string
 	db       string
-
-	running bool
-
+	running  bool
 	listener net.Listener
-
 	allowips []net.IP
-
-	//nodes map[string]*backend.Node
-	//node *backend.Node
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -129,7 +113,7 @@ func (s *Server) onConn(c net.Conn) {
 		if err != nil {
 			const size = 4096
 			buf := make([]byte, size)
-			buf = buf[:runtime.Stack(buf, false)] //获得当前goroutine的stacktrace
+			buf = buf[:runtime.Stack(buf, false)]
 			log.Printf("Error server.onConn remoteAddr:%s, stack:%s", c.RemoteAddr().String(), string(buf))
 		}
 
