@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -28,11 +29,14 @@ type Config struct {
 	Password       string       `yaml:"password"`
 	AllowIps       string       `yaml:"allow_ips"`
 	Nodes          []NodeConfig `yaml:"nodes"`
-	ServerCertFile string
-	ServerKeyFile  string
+	CaCertFile     string
+	CaKeyFile      string
 	ClientCertFile string
 	ClientKeyFile  string
-	TlsAddr        string
+	TlsServer      bool
+	TlsClient      bool
+	TlsServerConf  *tls.Config
+	TlsClientConf  *tls.Config
 }
 
 type NodeConfig struct {
@@ -67,15 +71,23 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	var err error
-	netProto := "tcp"
 
-	s.listener, err = net.Listen(netProto, s.addr)
+	n := "tcp"
+	if strings.Contains(s.addr, "/") {
+		n = "unix"
+	}
+
+	if s.cfg.TlsServer {
+		s.listener, err = tls.Listen(n, s.addr, s.cfg.TlsServerConf)
+	} else {
+		s.listener, err = net.Listen(n, s.addr)
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("server.NewServer Server running. netProto:%s, address:%s", netProto, s.addr)
+	log.Printf("server.NewServer Server running. address %s:%s, tls:%v", n, s.addr, s.cfg.TlsServer)
 	return s, nil
 }
 
@@ -418,6 +430,7 @@ func (c *ClientConn) Run() {
 
 	log.Printf("Success handshake. RemoteAddr:%s", c.c.RemoteAddr())
 	co := new(Conn)
+	co.client = c
 	db := c.proxy.cfg.Nodes[0]
 	if err := co.Connect(db.Addr, db.User, db.Password, db.Db); err != nil {
 		log.Fatal(err)

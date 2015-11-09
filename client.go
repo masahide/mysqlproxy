@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 
 //proxy <-> mysql server
 type Conn struct {
+	client     *ClientConn
 	conn       net.Conn
 	pkg        *mysql.PacketIO
 	addr       string
@@ -52,7 +54,13 @@ func (c *Conn) ReConnect() error {
 		n = "unix"
 	}
 
-	netConn, err := net.Dial(n, c.addr)
+	var err error
+	var netConn net.Conn
+	if c.client.proxy.cfg.TlsClient {
+		netConn, err = tls.Dial(n, c.addr, c.client.proxy.cfg.TlsClientConf)
+	} else {
+		netConn, err = net.Dial(n, c.addr)
+	}
 	if err != nil {
 		return err
 	}

@@ -4,13 +4,8 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"flag"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
-	"net"
-	"sync"
 )
 
 var (
@@ -29,11 +24,12 @@ var (
 				Addr:     "192.168.99.100:3306",
 			},
 		},
-		ServerCertFile: "server.pem",
-		ServerKeyFile:  "server.key",
+		TlsServer:      false,
+		TlsClient:      false,
+		CaCertFile:     "ca.pem",
+		CaKeyFile:      "ca.key",
 		ClientCertFile: "client.pem",
 		ClientKeyFile:  "client.key",
-		TlsAddr:        "127.0.0.1:3443",
 	}
 
 	tlsserver = false
@@ -41,109 +37,56 @@ var (
 )
 
 func init() {
-	flag.BoolVar(&tlsserver, "tlsserver", tlsserver, "tlsserver mode")
-	flag.BoolVar(&tlsclient, "tlsclient", tlsclient, "tlsclient mode")
+
+	if cfg.TlsServer {
+		ca_b, _ := ioutil.ReadFile(cfg.CaCertFile)
+		ca, _ := x509.ParseCertificate(ca_b)
+		priv_b, _ := ioutil.ReadFile(cfg.CaKeyFile)
+		priv, _ := x509.ParsePKCS1PrivateKey(priv_b)
+
+		pool := x509.NewCertPool()
+		pool.AddCert(ca)
+
+		cert := tls.Certificate{
+			Certificate: [][]byte{ca_b},
+			PrivateKey:  priv,
+		}
+
+		cfg.TlsServerConf = &tls.Config{
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			Certificates: []tls.Certificate{cert},
+			ClientCAs:    pool,
+		}
+		cfg.TlsServerConf.Rand = rand.Reader
+	}
+	if cfg.TlsClient {
+		cert_b, err := ioutil.ReadFile(cfg.ClientCertFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		priv_b, err := ioutil.ReadFile(cfg.ClientKeyFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		priv, err := x509.ParsePKCS1PrivateKey(priv_b)
+		if err != nil {
+			log.Fatal(err)
+		}
+		cfg.TlsClientConf = &tls.Config{
+			Certificates: []tls.Certificate{{
+				Certificate: [][]byte{cert_b},
+				PrivateKey:  priv,
+			}},
+			InsecureSkipVerify: true,
+		}
+	}
 
 }
 
 func main() {
-	flag.Parse()
-
-	switch {
-	case !tlsserver && !tlsclient:
-		svr, err := NewServer(&cfg)
-		if err != nil {
-			log.Fatal(err)
-		}
-		svr.Run()
-	case tlsserver:
-		tlsServer()
-	case tlsclient:
-		tlsClient()
-	}
-}
-
-func tlsServer() {
-	certificate, err := tls.LoadX509KeyPair(cfg.ServerCertFile, cfg.ServerKeyFile)
+	svr, err := NewServer(&cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tlsconfig := tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		ClientAuth:   tls.RequireAnyClientCert,
-	}
-	tlsconfig.Rand = rand.Reader
-	var netlistener net.Listener
-	netlistener, err = tls.Listen("tcp", cfg.TlsAddr, &tlsconfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("[Server Status] : Tls Listening: %s", cfg.TlsAddr)
-	for {
-		conn, err := netlistener.Accept()
-		if err != nil {
-			log.Printf("server: accept: %s", err)
-			break
-		}
-		log.Printf("server: accepted from %s", conn.RemoteAddr())
-		go handleClient(conn)
-	}
-}
-
-func handleClient(conn net.Conn) {
-	defer conn.Close()
-
-	co := new(Conn)
-	db := cfg.Nodes[0]
-	if err := co.Connect(db.Addr, db.User, db.Password, db.Db); err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Success Connect. RemoteAddr:%s", co.conn.RemoteAddr())
-
-	done := make(chan bool)
-	var once sync.Once
-	onceDone := func() {
-		log.Printf("done.")
-		done <- true
-	}
-	go func() {
-		io.Copy(conn, co.conn)
-		once.Do(onceDone)
-	}()
-	go func() {
-		io.Copy(co.conn, conn)
-		once.Do(onceDone)
-	}()
-	<-done
-	log.Println("server: conn: closed")
-}
-
-func tlsClient() {
-	cert_b, _ := ioutil.ReadFile(cfg.ClientCertFile)
-	priv_b, _ := ioutil.ReadFile(cfg.ClientKeyFile)
-	priv, _ := x509.ParsePKCS1PrivateKey(priv_b)
-
-	config := tls.Config{
-		Certificates: []tls.Certificate{{
-			Certificate: [][]byte{cert_b},
-			PrivateKey:  priv,
-		}},
-		InsecureSkipVerify: true,
-	}
-	conn, err := tls.Dial("tcp", cfg.TlsAddr, &config)
-	if err != nil {
-		log.Fatalf("client: dial: %s", err)
-	}
-	defer conn.Close()
-	log.Println("client: connected to: ", conn.RemoteAddr())
-
-	state := conn.ConnectionState()
-	for _, v := range state.PeerCertificates {
-		fmt.Println(x509.MarshalPKIXPublicKey(v.PublicKey))
-		fmt.Println(v.Subject)
-	}
-	log.Println("client: handshake: ", state.HandshakeComplete)
-	log.Println("client: mutual: ", state.NegotiatedProtocolIsMutual)
-
-	log.Print("client: exiting")
+	svr.Run()
 }
