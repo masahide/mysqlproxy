@@ -23,11 +23,16 @@ var DEFAULT_CAPABILITY uint32 = mysql.CLIENT_LONG_PASSWORD | mysql.CLIENT_LONG_F
 	mysql.CLIENT_TRANSACTIONS | mysql.CLIENT_SECURE_CONNECTION
 
 type Config struct {
-	Addr     string       `yaml:"addr"`
-	User     string       `yaml:"user"`
-	Password string       `yaml:"password"`
-	AllowIps string       `yaml:"allow_ips"`
-	Nodes    []NodeConfig `yaml:"nodes"`
+	Addr           string       `yaml:"addr"`
+	User           string       `yaml:"user"`
+	Password       string       `yaml:"password"`
+	AllowIps       string       `yaml:"allow_ips"`
+	Nodes          []NodeConfig `yaml:"nodes"`
+	ServerCertFile string
+	ServerKeyFile  string
+	ClientCertFile string
+	ClientKeyFile  string
+	TlsAddr        string
 }
 
 type NodeConfig struct {
