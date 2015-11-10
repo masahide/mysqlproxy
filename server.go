@@ -491,5 +491,4 @@ func (c *ClientConn) Run() {
 		once.Do(onceDone)
 	}()
 	<-done
-	os.Exit(0)
 }
