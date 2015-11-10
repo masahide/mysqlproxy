@@ -110,11 +110,6 @@ func main() {
 		sig := <-sc
 		log.Printf("main Got signal: %s", sig)
 		svr.Close()
-		if cfg.TlsClient {
-			if err := os.Remove(cfg.Addr); err != nil {
-				log.Fatal(err)
-			}
-		}
 	}()
 	svr.Run()
 }
