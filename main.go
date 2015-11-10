@@ -4,46 +4,61 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var (
-	cfg = Config{
-		Addr:     "127.0.0.1:3311",
-		User:     "test",
-		Password: "hoge",
+	cfg  Config
+	cfgs = map[bool]Config{
+		true: Config{
+			Addr:     "./mysqlproxy.sock",
+			Password: "hoge",
 
-		AllowIps: "127.0.0.1",
-		Nodes: []NodeConfig{
-			{
-				Name:     "testdb",
-				User:     "root",
-				Password: "my-secret-pw",
-				Db:       "testdb",
-				Addr:     "192.168.99.100:3306",
-			},
+			AllowIps:       "@",
+			TlsServer:      false,
+			TlsClient:      true,
+			ClientCertFile: "client.pem",
+			ClientKeyFile:  "client.key",
 		},
-		TlsServer:      false,
-		TlsClient:      false,
-		CaCertFile:     "ca.pem",
-		CaKeyFile:      "ca.key",
-		ClientCertFile: "client.pem",
-		ClientKeyFile:  "client.key",
-	}
+		false: Config{
+			Addr:     "0.0.0.0:9696",
+			Password: "hoge",
 
-	tlsserver = false
-	tlsclient = false
+			AllowIps:   "",
+			TlsServer:  true,
+			TlsClient:  false,
+			CaCertFile: "ca.pem",
+			CaKeyFile:  "ca.key",
+		},
+	}
+	root *bool = flag.Bool("root", false, "Serve as root proxy server.")
 )
 
 func init() {
-
+	flag.Parse()
+	cfg = cfgs[*root]
 	if cfg.TlsServer {
-		ca_b, _ := ioutil.ReadFile(cfg.CaCertFile)
-		ca, _ := x509.ParseCertificate(ca_b)
-		priv_b, _ := ioutil.ReadFile(cfg.CaKeyFile)
-		priv, _ := x509.ParsePKCS1PrivateKey(priv_b)
-
+		ca_b, err := ioutil.ReadFile(cfg.CaCertFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ca, err := x509.ParseCertificate(ca_b)
+		if err != nil {
+			log.Fatal(err)
+		}
+		priv_b, err := ioutil.ReadFile(cfg.CaKeyFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		priv, err := x509.ParsePKCS1PrivateKey(priv_b)
+		if err != nil {
+			log.Fatal(err)
+		}
 		pool := x509.NewCertPool()
 		pool.AddCert(ca)
 
@@ -51,7 +66,6 @@ func init() {
 			Certificate: [][]byte{ca_b},
 			PrivateKey:  priv,
 		}
-
 		cfg.TlsServerConf = &tls.Config{
 			ClientAuth:   tls.RequireAndVerifyClientCert,
 			Certificates: []tls.Certificate{cert},
@@ -88,5 +102,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		sig := <-sc
+		log.Printf("main Got signal: %s", sig)
+		svr.Close()
+		if cfg.TlsClient {
+			if err := os.Remove(cfg.Addr); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
 	svr.Run()
 }
