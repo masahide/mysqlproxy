@@ -65,16 +65,21 @@ func (c *Conn) ReConnect() error {
 		return err
 	}
 
-	tcpConn := netConn.(*net.TCPConn)
+	switch netConn.(type) {
+	case *net.TCPConn:
+		tcpConn := netConn.(*net.TCPConn)
 
-	//SetNoDelay controls whether the operating system should delay packet transmission
-	// in hopes of sending fewer packets (Nagle's algorithm).
-	// The default is true (no delay),
-	// meaning that data is sent as soon as possible after a Write.
-	//I set this option false.
-	tcpConn.SetNoDelay(false)
-	c.conn = tcpConn
-	c.pkg = mysql.NewPacketIO(tcpConn)
+		//SetNoDelay controls whether the operating system should delay packet transmission
+		// in hopes of sending fewer packets (Nagle's algorithm).
+		// The default is true (no delay),
+		// meaning that data is sent as soon as possible after a Write.
+		//I set this option false.
+		tcpConn.SetNoDelay(false)
+		c.conn = tcpConn
+	default:
+		c.conn = netConn
+	}
+	c.pkg = mysql.NewPacketIO(c.conn)
 
 	if err := c.readInitialHandshake(); err != nil {
 		c.conn.Close()

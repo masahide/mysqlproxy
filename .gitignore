@@ -22,3 +22,11 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+ca.key
+ca.pem
+client.key
+client.pem
+genkey/genkey
+mysqlproxy
+mysqlproxy.sock
