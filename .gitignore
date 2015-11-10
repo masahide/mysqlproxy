@@ -30,3 +30,4 @@ client.pem
 genkey/genkey
 mysqlproxy
 mysqlproxy.sock
+db.php
