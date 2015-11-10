@@ -1,0 +1,7 @@
+ca.key
+ca.pem
+client.key
+client.pem
+db.php
+mysqlproxy
+mysqlproxy.sock

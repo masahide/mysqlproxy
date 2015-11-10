@@ -1,4 +1,4 @@
-package main
+package mysqlproxy
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -24,11 +25,9 @@ var DEFAULT_CAPABILITY uint32 = mysql.CLIENT_LONG_PASSWORD | mysql.CLIENT_LONG_F
 	mysql.CLIENT_TRANSACTIONS | mysql.CLIENT_SECURE_CONNECTION
 
 type Config struct {
-	Addr           string       `yaml:"addr"`
-	User           string       `yaml:"user"`
-	Password       string       `yaml:"password"`
-	AllowIps       string       `yaml:"allow_ips"`
-	Nodes          []NodeConfig `yaml:"nodes"`
+	Addr           string `yaml:"addr"`
+	Password       string `yaml:"password"`
+	AllowIps       string `yaml:"allow_ips"`
 	CaCertFile     string
 	CaKeyFile      string
 	ClientCertFile string
@@ -40,7 +39,6 @@ type Config struct {
 }
 
 type NodeConfig struct {
-	Name     string `yaml:"name"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Db       string `yaml:"db"`
@@ -49,12 +47,11 @@ type NodeConfig struct {
 type Server struct {
 	cfg      *Config
 	addr     string
-	user     string
 	password string
-	db       string
 	running  bool
 	listener net.Listener
 	allowips []net.IP
+	node     *NodeConfig
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -63,7 +60,6 @@ func NewServer(cfg *Config) (*Server, error) {
 	s.cfg = cfg
 
 	s.addr = cfg.Addr
-	s.user = cfg.User
 	s.password = cfg.Password
 
 	if err := s.parseAllowIps(); err != nil {
@@ -85,6 +81,12 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if n == "unix" {
+		if err = os.Chmod(s.addr, 0777); err != nil {
+			return nil, err
+		}
 	}
 
 	log.Printf("server.NewServer Server running. address %s:%s, tls:%v", n, s.addr, s.cfg.TlsServer)
@@ -176,7 +178,7 @@ func (s *Server) Run() error {
 	for s.running {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			log.Printf("Errori server.Run %s", err.Error())
+			log.Printf("Error server.Run %s", err.Error())
 			continue
 		}
 
@@ -209,6 +211,7 @@ type ClientConn struct {
 	closed       bool
 	lastInsertId int64
 	affectedRows int64
+	node         *NodeConfig
 }
 
 func (c *ClientConn) Close() error {
@@ -351,6 +354,34 @@ func (c *ClientConn) writeInitialHandshake() error {
 
 	return c.writePacket(data)
 }
+
+var nodeRe = regexp.MustCompile(`^(.+):(.*)@(.+:\d+);(.+:\d+)(;(.+))?$`)
+
+// getNode parse from c.user
+// example: user:pass@proxy_host:proxy_port;db_host:db_port;db_name
+// pass and db_name is optional
+// example: user:@proxy_host:proxy_port;db_host:db_port
+func (c *ClientConn) getNode() error {
+	matches := nodeRe.FindStringSubmatch(c.user)
+	if len(matches) != 7 {
+		return fmt.Errorf("Invalid user: %s", c.user)
+	}
+	if c.proxy.cfg.TlsClient {
+		c.node = &NodeConfig{
+			User:     c.user,
+			Password: c.proxy.cfg.Password,
+			Addr:     matches[3],
+		}
+		return nil
+	}
+	c.node = &NodeConfig{
+		User:     matches[1],
+		Password: matches[2],
+		Db:       matches[6],
+		Addr:     matches[4],
+	}
+	return nil
+}
 func (c *ClientConn) readHandshakeResponse() error {
 	data, err := c.readPacket()
 
@@ -376,6 +407,9 @@ func (c *ClientConn) readHandshakeResponse() error {
 
 	//user name
 	c.user = string(data[pos : pos+bytes.IndexByte(data[pos:], 0)])
+	if err := c.getNode(); err != nil {
+		return err
+	}
 	pos += len(c.user) + 1
 
 	//auth length and auth
@@ -436,7 +470,7 @@ func (c *ClientConn) Run() {
 	log.Printf("Success handshake. RemoteAddr:%s", c.c.RemoteAddr())
 	co := new(Conn)
 	co.client = c
-	db := c.proxy.cfg.Nodes[0]
+	db := c.node
 	if err := co.Connect(db.Addr, db.User, db.Password, db.Db); err != nil {
 		log.Fatal(err)
 	}
@@ -457,5 +491,4 @@ func (c *ClientConn) Run() {
 		once.Do(onceDone)
 	}()
 	<-done
-	os.Exit(0)
 }
