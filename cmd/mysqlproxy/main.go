@@ -10,12 +10,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/ando-masaki/mysqlproxy"
 )
 
 var (
-	cfg  Config
-	cfgs = map[bool]Config{
-		true: Config{
+	cfg  mysqlproxy.Config
+	cfgs = map[bool]mysqlproxy.Config{
+		true: mysqlproxy.Config{
 			Addr:     "./mysqlproxy.sock",
 			Password: "hoge",
 
@@ -25,7 +27,7 @@ var (
 			ClientCertFile: "client.pem",
 			ClientKeyFile:  "client.key",
 		},
-		false: Config{
+		false: mysqlproxy.Config{
 			Addr:     "0.0.0.0:9696",
 			Password: "hoge",
 
@@ -98,7 +100,7 @@ func init() {
 }
 
 func main() {
-	svr, err := NewServer(&cfg)
+	svr, err := mysqlproxy.NewServer(&cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
