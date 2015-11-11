@@ -9,16 +9,17 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
-	"github.com/ando-masaki/mysqlproxy"
+	"github.com/masahide/mysqlproxy"
 )
 
 var (
 	cfg  mysqlproxy.Config
 	cfgs = map[bool]mysqlproxy.Config{
 		true: mysqlproxy.Config{
-			Addr:     "./mysqlproxy.sock",
+			Addr:     "mysqlproxy.sock",
 			Password: "hoge",
 
 			AllowIps:       "@",
@@ -38,13 +39,22 @@ var (
 			CaKeyFile:  "ca.key",
 		},
 	}
-	root *bool = flag.Bool("root", false, "Serve as root proxy server.")
+	root    *bool   = flag.Bool("root", false, "Serve as root proxy server.")
+	workdir *string = flag.String("workdir", "", "Work directory.")
 )
 
 func init() {
 	flag.Parse()
 	cfg = cfgs[*root]
+	if *workdir == "" {
+		var err error
+		if *workdir, err = os.Getwd(); err != nil {
+			log.Fatal(err)
+		}
+	}
 	if cfg.TlsServer {
+		cfg.CaCertFile = filepath.Join(*workdir, cfg.CaCertFile)
+		cfg.CaKeyFile = filepath.Join(*workdir, cfg.CaKeyFile)
 		ca_b, err := ioutil.ReadFile(cfg.CaCertFile)
 		if err != nil {
 			log.Fatal(err)
@@ -76,6 +86,9 @@ func init() {
 		cfg.TlsServerConf.Rand = rand.Reader
 	}
 	if cfg.TlsClient {
+		cfg.Addr = filepath.Join(*workdir, cfg.Addr)
+		cfg.ClientCertFile = filepath.Join(*workdir, cfg.ClientCertFile)
+		cfg.ClientKeyFile = filepath.Join(*workdir, cfg.ClientKeyFile)
 		cert_b, err := ioutil.ReadFile(cfg.ClientCertFile)
 		if err != nil {
 			log.Fatal(err)
