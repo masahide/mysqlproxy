@@ -1,0 +1,10 @@
+["user1"]
+username = "hoge"
+password = "fuga"
+proxyserver = "201.34.33.44"
+
+["user2"]
+username = "hoge"
+password = "fuga"
+proxyserver = "201.34.33.44"
+
