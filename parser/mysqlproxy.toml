@@ -1,10 +1,10 @@
 ["user1"]
-username = "hoge"
-password = "fuga"
-proxyserver = "201.34.33.44"
+username = "user1"
+password = "******"
+proxyserver = "1.2.3.4"
 
 ["user2"]
-username = "hoge"
-password = "fuga"
-proxyserver = "201.34.33.44"
+username = "user2"
+password = "******"
+proxyserver = "1.2.3.5"
 
