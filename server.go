@@ -15,7 +15,13 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/masahide/mysqlproxy/parser"
 	"github.com/siddontang/mixer/mysql"
+)
+
+const (
+	DefaultMySQLPort      = "3306"
+	DefaultMySQLProxyPort = "9696"
 )
 
 var baseConnId uint32 = 10000
@@ -36,6 +42,7 @@ type Config struct {
 	TlsClient      bool
 	TlsServerConf  *tls.Config
 	TlsClientConf  *tls.Config
+	ConfigPath     string
 }
 
 type NodeConfig struct {
@@ -355,6 +362,44 @@ func (c *ClientConn) writeInitialHandshake() error {
 	return c.writePacket(data)
 }
 
+func (c *ClientConn) getNodeFromConfigFile() (*NodeConfig, error) {
+	if c.proxy.cfg.ConfigPath == "" {
+		return nil, nil
+	}
+	p := parser.Parser{
+		ConfigPath: c.proxy.cfg.ConfigPath,
+	}
+	proxyUsers, err := p.Parse()
+	if err != nil {
+		return nil, err
+	}
+	substrings := strings.Split(c.user, "@")
+	if len(substrings) != 2 {
+		return nil, fmt.Errorf("Invalid user: %s", c.user)
+	}
+	proxyUser := proxyUsers[substrings[0]]
+	proxyAddr := proxyUser.ProxyServer
+	if !strings.Contains(proxyAddr, ":") {
+		proxyAddr = fmt.Sprintf("%s:%s", proxyAddr, DefaultMySQLProxyPort)
+	}
+	dbAddr := substrings[1]
+	if !strings.Contains(dbAddr, ":") {
+		dbAddr = fmt.Sprintf("%s:%s", dbAddr, DefaultMySQLPort)
+	}
+	node := &NodeConfig{
+		User: fmt.Sprintf(
+			"%s:%s@%s;%s",
+			proxyUser.Username,
+			proxyUser.Password,
+			proxyAddr,
+			dbAddr,
+		),
+		Password: c.proxy.cfg.Password,
+		Addr:     proxyAddr,
+	}
+	return node, nil
+}
+
 var nodeRe = regexp.MustCompile(`^(.+):(.*)@(.+:\d+);(.+:\d+)(;(.+))?$`)
 
 // getNode parse from c.user
@@ -362,6 +407,13 @@ var nodeRe = regexp.MustCompile(`^(.+):(.*)@(.+:\d+);(.+:\d+)(;(.+))?$`)
 // pass and db_name is optional
 // example: user:@proxy_host:proxy_port;db_host:db_port
 func (c *ClientConn) getNode() error {
+	var err error
+	if c.node, err = c.getNodeFromConfigFile(); err != nil {
+		log.Print(err)
+	}
+	if c.node != nil {
+		return nil
+	}
 	matches := nodeRe.FindStringSubmatch(c.user)
 	if len(matches) != 7 {
 		return fmt.Errorf("Invalid user: %s", c.user)

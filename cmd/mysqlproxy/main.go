@@ -41,6 +41,7 @@ var (
 	}
 	root    *bool   = flag.Bool("root", false, "Serve as root proxy server.")
 	workdir *string = flag.String("workdir", "", "Work directory.")
+	config  *string = flag.String("config", "", "Config file path.")
 )
 
 func init() {
@@ -52,6 +53,7 @@ func init() {
 			log.Fatal(err)
 		}
 	}
+	cfg.ConfigPath = *config
 	if cfg.TlsServer {
 		cfg.CaCertFile = filepath.Join(*workdir, cfg.CaCertFile)
 		cfg.CaKeyFile = filepath.Join(*workdir, cfg.CaKeyFile)

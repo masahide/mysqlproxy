@@ -1,8 +1,6 @@
 # mysqlproxy
 
-MySQL Proxy server for PHP.
-
-mysql command does not work.
+MySQL Proxy server.
 
 ## Usage
 
