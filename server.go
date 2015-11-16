@@ -409,7 +409,7 @@ var nodeRe = regexp.MustCompile(`^(.+):(.*)@(.+:\d+);(.+:\d+)(;(.+))?$`)
 func (c *ClientConn) getNode() error {
 	var err error
 	if c.node, err = c.getNodeFromConfigFile(); err != nil {
-		return err
+		log.Print(err)
 	}
 	if c.node != nil {
 		return nil
