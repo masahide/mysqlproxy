@@ -380,11 +380,11 @@ func (c *ClientConn) getNodeFromConfigFile() (*NodeConfig, error) {
 	proxyUser := proxyUsers[substrings[0]]
 	proxyAddr := proxyUser.ProxyServer
 	if !strings.Contains(proxyAddr, ":") {
-		proxyAddr := fmt.Sprintf("%s:%s", proxyAddr, DefaultMySQLProxyPort)
+		proxyAddr = fmt.Sprintf("%s:%s", proxyAddr, DefaultMySQLProxyPort)
 	}
 	dbAddr := substrings[1]
 	if !strings.Contains(dbAddr, ":") {
-		dbAddr := fmt.Sprintf("%s:%s", dbAddr, DefaultMySQLPort)
+		dbAddr = fmt.Sprintf("%s:%s", dbAddr, DefaultMySQLPort)
 	}
 	node := &NodeConfig{
 		User: fmt.Sprintf(
