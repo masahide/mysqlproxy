@@ -19,8 +19,7 @@ var (
 	cfg  mysqlproxy.Config
 	cfgs = map[bool]mysqlproxy.Config{
 		true: mysqlproxy.Config{
-			Addr:     "mysqlproxy.sock",
-			Password: "hoge",
+			Addr: "mysqlproxy.sock",
 
 			AllowIps:       "@",
 			TlsServer:      false,
@@ -29,8 +28,7 @@ var (
 			ClientKeyFile:  "client.key",
 		},
 		false: mysqlproxy.Config{
-			Addr:     "0.0.0.0:9696",
-			Password: "hoge",
+			Addr: "0.0.0.0:9696",
 
 			AllowIps:   "",
 			TlsServer:  true,

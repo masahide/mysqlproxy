@@ -22,7 +22,7 @@ MySQL Proxy server.
 $link = mysql_connect(
 	'/path/to/mysqlproxy.sock',
 	'<db user>:<db password>@<proxy host>:<proxy port>;<db host>:<db port>',
-	'<proxy password>',
+	'<db password>',
 );
 
 // For example in following Data flow.

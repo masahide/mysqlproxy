@@ -32,7 +32,6 @@ var DEFAULT_CAPABILITY uint32 = mysql.CLIENT_LONG_PASSWORD | mysql.CLIENT_LONG_F
 
 type Config struct {
 	Addr           string `yaml:"addr"`
-	Password       string `yaml:"password"`
 	AllowIps       string `yaml:"allow_ips"`
 	CaCertFile     string
 	CaKeyFile      string
@@ -67,7 +66,6 @@ func NewServer(cfg *Config) (*Server, error) {
 	s.cfg = cfg
 
 	s.addr = cfg.Addr
-	s.password = cfg.Password
 
 	if err := s.parseAllowIps(); err != nil {
 		return nil, err
@@ -394,7 +392,7 @@ func (c *ClientConn) getNodeFromConfigFile() (*NodeConfig, error) {
 			proxyAddr,
 			dbAddr,
 		),
-		Password: c.proxy.cfg.Password,
+		Password: proxyUser.Password,
 		Addr:     proxyAddr,
 	}
 	return node, nil
@@ -421,7 +419,7 @@ func (c *ClientConn) getNode() error {
 	if c.proxy.cfg.TlsClient {
 		c.node = &NodeConfig{
 			User:     c.user,
-			Password: c.proxy.cfg.Password,
+			Password: matches[2],
 			Addr:     matches[3],
 		}
 		return nil
@@ -469,9 +467,9 @@ func (c *ClientConn) readHandshakeResponse() error {
 	pos++
 	auth := data[pos : pos+authLen]
 
-	checkAuth := mysql.CalcPassword(c.salt, []byte(c.proxy.cfg.Password))
+	checkAuth := mysql.CalcPassword(c.salt, []byte(c.node.Password))
 	if !bytes.Equal(auth, checkAuth) {
-		log.Printf("Error ClientConn.readHandshakeResponse. auth:%v, checkAuth:%v, Password:%v", auth, checkAuth, c.proxy.cfg.Password)
+		log.Printf("Error ClientConn.readHandshakeResponse. auth:%v, checkAuth:%v, Password:%v", auth, checkAuth, c.node.Password)
 		return mysql.NewDefaultError(mysql.ER_ACCESS_DENIED_ERROR, c.c.RemoteAddr().String(), c.user, "Yes")
 	}
 
