@@ -15,6 +15,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/k0kubun/pp"
 	"github.com/masahide/mysqlproxy/parser"
 	"github.com/siddontang/mixer/mysql"
 )
@@ -364,6 +365,9 @@ func (c *ClientConn) getNodeFromConfigFile() (*NodeConfig, error) {
 	if c.proxy.cfg.ConfigPath == "" {
 		return nil, nil
 	}
+	if strings.Contains(c.user, ";") {
+		return nil, nil
+	}
 	p := parser.Parser{
 		ConfigPath: c.proxy.cfg.ConfigPath,
 	}
@@ -375,6 +379,7 @@ func (c *ClientConn) getNodeFromConfigFile() (*NodeConfig, error) {
 	if len(substrings) != 2 {
 		return nil, fmt.Errorf("Invalid user: %s", c.user)
 	}
+	pp.Println(substrings)
 	proxyUser := proxyUsers[substrings[0]]
 	proxyAddr := proxyUser.ProxyServer
 	if !strings.Contains(proxyAddr, ":") {
@@ -412,6 +417,7 @@ func (c *ClientConn) getNode() error {
 	if c.node != nil {
 		return nil
 	}
+	pp.Println(c.node)
 	matches := nodeRe.FindStringSubmatch(c.user)
 	if len(matches) != 7 {
 		return fmt.Errorf("Invalid user: %s", c.user)
