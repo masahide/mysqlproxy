@@ -495,6 +495,7 @@ func (c *ClientConn) readHandshakeResponse() error {
 }
 func (c *ClientConn) useDB(db string) error {
 	c.db = db
+	c.node.Db = db
 	return nil
 }
 
