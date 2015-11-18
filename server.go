@@ -364,6 +364,9 @@ func (c *ClientConn) getNodeFromConfigFile() (*NodeConfig, error) {
 	if c.proxy.cfg.ConfigPath == "" {
 		return nil, nil
 	}
+	if strings.Contains(c.user, ";") {
+		return nil, nil
+	}
 	p := parser.Parser{
 		ConfigPath: c.proxy.cfg.ConfigPath,
 	}

@@ -5,3 +5,4 @@ client.pem
 db.php
 mysqlproxy
 mysqlproxy.sock
+mysqlproxy.toml
