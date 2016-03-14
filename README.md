@@ -6,11 +6,15 @@ MySQL Proxy server.
 
 ### Starting MySQL proxy server (root)
 
+クライアントから接続するためのデーモン
+
 ```
 ./mysqlproxy -root
 ```
 
 ### Starting MySQL proxy server
+
+MySQLサーバーに中継するためのデーモン
 
 ```
 ./mysqlproxy
