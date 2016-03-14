@@ -4,6 +4,14 @@ MySQL Proxy server.
 
 ## Usage
 
+### Connect to MySQL Server via MySQL proxy server
+
+MySQL Proxy サーバーを経由してのMySQL接続方法
+
+```
+mysql -S /path/to/mysqlproxy.sock -u <MySQLサーバーのユーザー名>@<MySQLサーバーのホスト>(:<MySQLサーバーのポート> 省略可)
+```
+
 ### Starting MySQL proxy server (root)
 
 クライアントから接続するためのデーモン
