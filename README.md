@@ -38,7 +38,8 @@ proxyserver = "<接続先プロキシサーバのホスト2>"
 MySQL Proxy サーバーを経由してのMySQL接続方法
 
 ```
-mysql -S /path/to/mysqlproxy.sock -u <MySQLサーバーのユーザー名>@<MySQLサーバーのホスト>(:<MySQLサーバーのポート>)
+mysql -S /path/to/mysqlproxy.sock -u <MySQLサーバーのユーザー名>@<MySQLサーバーのホスト>(:<MySQLサーバーのポート>) -p
+Enter password: <MySQLサーバーのパスワード>
 ※ ポートが3306番であれば省略可能
 ※ mysqlコマンドからだとユーザー名に文字数制限があるため、rdsのように長いドメインの場合は、
 PHP等の各種プログラミング言語のMySQL接続アダプタを介せば接続可能です。
