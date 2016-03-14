@@ -23,11 +23,11 @@ vim /path/to/mysqlproxy.toml
 ["<接続先MySQLユーザー名1>"]
 username = "<接続先MySQLユーザー名1>"
 password = "<接続先MySQLパスワード1>"
-proxyserver = "<接続先MySQLホスト1>"
+proxyserver = "<接続先プロキシサーバのホスト1>"
 ["<接続先MySQLユーザー名2>"]
 username = "<接続先MySQLユーザー名2>"
 password = "<接続先MySQLパスワード2>"
-proxyserver = "<接続先MySQLホスト2>"
+proxyserver = "<接続先プロキシサーバのホスト2>"
 …(繰り返し)
 ```
 
