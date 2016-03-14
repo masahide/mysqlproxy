@@ -10,9 +10,9 @@ MySQL Proxy サーバーを経由してのMySQL接続方法
 
 ```
 mysql -S /path/to/mysqlproxy.sock -u <MySQLサーバーのユーザー名>@<MySQLサーバーのホスト>(:<MySQLサーバーのポート>)
+※ ポートが3306番であれば省略可能
 ```
 
-ポートが3306番であれば省略可能
 
 ### Starting MySQL proxy server (root)
 
