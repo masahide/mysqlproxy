@@ -16,6 +16,8 @@ sudo mkdir -p /path/to/workdir
 
 ### 設定ファイルの設置
 
+※ ルート(クライアントから接続するためのデーモン)のみ設置
+
 ```
 vim /path/to/mysqlproxy.toml
 ["<接続先MySQLユーザー名1>"]
