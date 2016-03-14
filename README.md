@@ -37,7 +37,7 @@ proxyserver = "<接続先プロキシサーバのホスト2>"
 
 MySQL Proxy サーバーを経由してのMySQL接続方法
 
-設定ファイルを使用しない場合
+#### 設定ファイルを使用しない場合
 
 ```
 mysql -S /path/to/mysqlproxy.sock -u <MySQLサーバーのユーザー名>(:<MySQLサーバーのパスワード>)@<プロキシサーバーのホスト>:<プロキシサーバーのポート>;<MySQLサーバーのホスト>:<MySQLサーバーのポート>(;<DB名>) -p
@@ -49,7 +49,7 @@ Enter password: <MySQLサーバーのパスワード>
 PHP等の各種プログラミング言語のMySQL接続アダプタを介せば接続可能です。
 ```
 
-設定ファイルを使用する場合
+#### 設定ファイルを使用する場合
 
 ```
 mysql -S /path/to/mysqlproxy.sock -u <MySQLサーバーのユーザー名>@<MySQLサーバーのホスト>(:<MySQLサーバーのポート>) -p
