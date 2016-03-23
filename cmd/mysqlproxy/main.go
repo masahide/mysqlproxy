@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,10 +16,12 @@ import (
 )
 
 var (
-	defaultListenPort = 9696
+	defaultListenNet  = "tcp"
+	defaultListenAddr = "0.0.0.0:9696"
 	cfg               mysqlproxy.Config
 	cfgs              = map[bool]mysqlproxy.Config{
 		true: mysqlproxy.Config{
+			Net:  "unix",
 			Addr: "mysqlproxy.sock",
 
 			AllowIps:       "@",
@@ -30,7 +31,8 @@ var (
 			ClientKeyFile:  "client.key",
 		},
 		false: mysqlproxy.Config{
-			Addr: fmt.Sprintf("0.0.0.0:%d", defaultListenPort),
+			Net:  defaultListenNet,
+			Addr: defaultListenAddr,
 
 			AllowIps:   "",
 			TlsServer:  true,
@@ -42,12 +44,19 @@ var (
 	root    *bool   = flag.Bool("root", false, "Serve as root proxy server.")
 	workdir *string = flag.String("workdir", "", "Work directory.")
 	config  *string = flag.String("config", "", "Config file path.")
-	port    *int    = flag.Int("p", defaultListenPort, "Listen port.")
+	net     *string = flag.String("net", defaultListenNet, "Listen net.")
+	addr    *string = flag.String("addr", defaultListenAddr, "Listen address.")
 )
 
 func init() {
 	flag.Parse()
 	cfg = cfgs[*root]
+	if *net != cfg.Net {
+		cfg.Net = *net
+	}
+	if *addr != cfg.Addr {
+		cfg.Addr = *addr
+	}
 	if *workdir == "" {
 		var err error
 		if *workdir, err = os.Getwd(); err != nil {
@@ -111,10 +120,7 @@ func init() {
 			}},
 			InsecureSkipVerify: true,
 		}
-	} else if *port != defaultListenPort {
-		cfg.Addr = fmt.Sprintf("0.0.0.0:%d", *port)
 	}
-
 }
 
 func main() {
