@@ -16,10 +16,8 @@ import (
 )
 
 var (
-	defaultListenNet  = "tcp"
-	defaultListenAddr = "0.0.0.0:9696"
-	cfg               mysqlproxy.Config
-	cfgs              = map[bool]mysqlproxy.Config{
+	cfg  mysqlproxy.Config
+	cfgs = map[bool]mysqlproxy.Config{
 		true: mysqlproxy.Config{
 			Net:  "unix",
 			Addr: "mysqlproxy.sock",
@@ -31,8 +29,8 @@ var (
 			ClientKeyFile:  "client.key",
 		},
 		false: mysqlproxy.Config{
-			Net:  defaultListenNet,
-			Addr: defaultListenAddr,
+			Net:  "tcp",
+			Addr: "0.0.0.0:9696",
 
 			AllowIps:   "",
 			TlsServer:  true,
@@ -44,17 +42,17 @@ var (
 	root    *bool   = flag.Bool("root", false, "Serve as root proxy server.")
 	workdir *string = flag.String("workdir", "", "Work directory.")
 	config  *string = flag.String("config", "", "Config file path.")
-	net     *string = flag.String("net", defaultListenNet, "Listen net.")
-	addr    *string = flag.String("addr", defaultListenAddr, "Listen address.")
+	net     *string = flag.String("net", "", "Listen net.")
+	addr    *string = flag.String("addr", "", "Listen address.")
 )
 
 func init() {
 	flag.Parse()
 	cfg = cfgs[*root]
-	if *net != cfg.Net {
+	if *net != "" {
 		cfg.Net = *net
 	}
-	if *addr != cfg.Addr {
+	if *addr != "" {
 		cfg.Addr = *addr
 	}
 	if *workdir == "" {
