@@ -31,6 +31,7 @@ var DEFAULT_CAPABILITY uint32 = mysql.CLIENT_LONG_PASSWORD | mysql.CLIENT_LONG_F
 	mysql.CLIENT_TRANSACTIONS | mysql.CLIENT_SECURE_CONNECTION
 
 type Config struct {
+	Net            string `yaml:"net"`
 	Addr           string `yaml:"addr"`
 	AllowIps       string `yaml:"allow_ips"`
 	CaCertFile     string
@@ -73,28 +74,23 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	var err error
 
-	n := "tcp"
-	if strings.Contains(s.addr, "/") {
-		n = "unix"
-	}
-
 	if s.cfg.TlsServer {
-		s.listener, err = tls.Listen(n, s.addr, s.cfg.TlsServerConf)
+		s.listener, err = tls.Listen(cfg.Net, s.addr, s.cfg.TlsServerConf)
 	} else {
-		s.listener, err = net.Listen(n, s.addr)
+		s.listener, err = net.Listen(cfg.Net, s.addr)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	if n == "unix" {
+	if cfg.Net == "unix" {
 		if err = os.Chmod(s.addr, 0777); err != nil {
 			return nil, err
 		}
 	}
 
-	log.Printf("server.NewServer Server running. address %s:%s, tls:%v", n, s.addr, s.cfg.TlsServer)
+	log.Printf("server.NewServer Server running. address %s:%s, tls:%v", cfg.Net, s.addr, s.cfg.TlsServer)
 	return s, nil
 }
 
