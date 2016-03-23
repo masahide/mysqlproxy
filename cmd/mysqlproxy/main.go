@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,8 +17,9 @@ import (
 )
 
 var (
-	cfg  mysqlproxy.Config
-	cfgs = map[bool]mysqlproxy.Config{
+	defaultListenPort = 9696
+	cfg               mysqlproxy.Config
+	cfgs              = map[bool]mysqlproxy.Config{
 		true: mysqlproxy.Config{
 			Addr: "mysqlproxy.sock",
 
@@ -28,7 +30,7 @@ var (
 			ClientKeyFile:  "client.key",
 		},
 		false: mysqlproxy.Config{
-			Addr: "0.0.0.0:9696",
+			Addr: fmt.Sprintf("0.0.0.0:%d", defaultListenPort),
 
 			AllowIps:   "",
 			TlsServer:  true,
@@ -40,6 +42,7 @@ var (
 	root    *bool   = flag.Bool("root", false, "Serve as root proxy server.")
 	workdir *string = flag.String("workdir", "", "Work directory.")
 	config  *string = flag.String("config", "", "Config file path.")
+	port    *int    = flag.Int("p", defaultListenPort, "Listen port.")
 )
 
 func init() {
@@ -108,6 +111,8 @@ func init() {
 			}},
 			InsecureSkipVerify: true,
 		}
+	} else if *port != defaultListenPort {
+		cfg.Addr = fmt.Sprintf("0.0.0.0:%d", *port)
 	}
 
 }
